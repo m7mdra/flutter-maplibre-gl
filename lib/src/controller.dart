@@ -13,6 +13,7 @@ typedef void OnUserLocationUpdated(UserLocation location);
 
 typedef void OnCameraTrackingDismissedCallback();
 typedef void OnCameraTrackingChangedCallback(MyLocationTrackingMode mode);
+typedef void OnAttributionClickCallback();
 
 typedef void OnCameraIdleCallback();
 
@@ -39,6 +40,7 @@ class MaplibreMapController extends ChangeNotifier {
       this.onMapClick,
       this.onMapLongClick,
       this.onCameraTrackingDismissed,
+      this.onAttributionClick,
       this.onCameraTrackingChanged,
       this.onMapIdle,
       this.onUserLocationUpdated,
@@ -65,6 +67,11 @@ class MaplibreMapController extends ChangeNotifier {
       final line = _lines[lineId];
       if (line != null) {
         onLineTapped(line);
+      }
+    });
+    MapLibreGlPlatform.getInstance(_id).onAttributionClickPlatform.add((_) {
+      if (onAttributionClick != null) {
+        onAttributionClick!();
       }
     });
 
@@ -189,6 +196,8 @@ class MaplibreMapController extends ChangeNotifier {
   final OnCameraTrackingChangedCallback? onCameraTrackingChanged;
 
   final OnCameraIdleCallback? onCameraIdle;
+
+  final OnAttributionClickCallback? onAttributionClick;
 
   final OnMapIdleCallback? onMapIdle;
 
@@ -847,17 +856,6 @@ class MaplibreMapController extends ChangeNotifier {
         .addImageSource(imageSourceId, bytes, coordinates);
   }
 
-  /// Removes previously added image source by id
-  Future<void> removeImageSource(String imageSourceId) {
-    return MapLibreGlPlatform.getInstance(_id).removeImageSource(imageSourceId);
-  }
-
-  /// Adds a Mapbox style layer to the map's style at render time.
-  Future<void> addLayer(String imageLayerId, String imageSourceId) {
-    return MapLibreGlPlatform.getInstance(_id)
-        .addLayer(imageLayerId, imageSourceId);
-  }
-
   /// Adds a Mapbox style layer below the layer provided with belowLayerId to the map's style at render time,
   Future<void> addLayerBelow(
       String imageLayerId, String imageSourceId, String belowLayerId) {
@@ -894,5 +892,191 @@ class MaplibreMapController extends ChangeNotifier {
   Future<double> getMetersPerPixelAtLatitude(double latitude) async {
     return MapLibreGlPlatform.getInstance(_id)
         .getMetersPerPixelAtLatitude(latitude);
+  }
+
+  /// Adds a new geojson source
+  ///
+  /// The json in [geojson] has to comply with the schema for FeatureCollection
+  /// as specified in https://datatracker.ietf.org/doc/html/rfc7946#section-3.3
+  ///
+  /// [promoteId] can be used on web to promote an id from properties to be the
+  /// id of the feature. This is useful because by default mapbox-gl-js does not
+  /// support string ids
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  Future<void> addGeoJsonSource(String sourceId, Map<String, dynamic> geojson,
+      {String? promoteId}) async {
+    await MapLibreGlPlatform.getInstance(_id)
+        .addGeoJsonSource(sourceId, geojson, promoteId: promoteId);
+  }
+
+  /// Sets new geojson data to and existing source
+  ///
+  /// This only works as exected if the source has been created with
+  /// [addGeoJsonSource] before. This is very useful if you want to update and
+  /// existing source with modified data.
+  ///
+  /// The json in [geojson] has to comply with the schema for FeatureCollection
+  /// as specified in https://datatracker.ietf.org/doc/html/rfc7946#section-3.3
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  Future<void> setGeoJsonSource(
+      String sourceId, Map<String, dynamic> geojson) async {
+    await MapLibreGlPlatform.getInstance(_id)
+        .setGeoJsonSource(sourceId, geojson);
+  }
+
+  /// Removes previously added source by id
+  Future<void> removeSource(String sourceId) {
+    return MapLibreGlPlatform.getInstance(_id).removeSource(sourceId);
+  }
+
+  /// Adds a Mapbox image layer to the map's style at render time.
+  Future<void> addImageLayer(String layerId, String imageSourceId) {
+    return MapLibreGlPlatform.getInstance(_id).addLayer(layerId, imageSourceId);
+  }
+
+  /// Adds a Mapbox image layer below the layer provided with belowLayerId to the map's style at render time.
+  Future<void> addImageLayerBelow(
+      String layerId, String sourceId, String imageSourceId) {
+    return MapLibreGlPlatform.getInstance(_id)
+        .addLayerBelow(layerId, sourceId, imageSourceId);
+  }
+
+  /// Add a new source to the map
+  Future<void> addSource(String sourceid, SourceProperties properties) async {
+    return MapLibreGlPlatform.getInstance(_id).addSource(sourceid, properties);
+  }
+
+  Future<void> addLayer(
+      String sourceId, String layerId, LayerProperties properties,
+      {String? belowLayerId,
+      bool enableInteraction = true,
+      String? sourceLayer}) async {
+    if (properties is FillLayerProperties) {
+      addFillLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else if (properties is LineLayerProperties) {
+      addLineLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else if (properties is SymbolLayerProperties) {
+      addSymbolLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else if (properties is CircleLayerProperties) {
+      addCircleLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else if (properties is RasterLayerProperties) {
+      addRasterLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else if (properties is HillshadeLayerProperties) {
+      addHillshadeLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer);
+    } else {
+      throw UnimplementedError("Unknown layer type $properties");
+    }
+  }
+
+  /// Add a symbol layer to the map with the given properties
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  ///
+  /// Note: [belowLayerId] is currently ignored on the web
+  Future<void> addSymbolLayer(
+      String sourceId, String layerId, SymbolLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addSymbolLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
+  }
+
+  /// Add a line layer to the map with the given properties
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  ///
+  /// Note: [belowLayerId] is currently ignored on the web
+  Future<void> addLineLayer(
+      String sourceId, String layerId, LineLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addLineLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
+  }
+
+  /// Add a fill layer to the map with the given properties
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  ///
+  /// Note: [belowLayerId] is currently ignored on the web
+  Future<void> addFillLayer(
+      String sourceId, String layerId, FillLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addFillLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
+  }
+
+  /// Add a circle layer to the map with the given properties
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  ///
+  /// Note: [belowLayerId] is currently ignored on the web
+  Future<void> addCircleLayer(
+      String sourceId, String layerId, CircleLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addCircleLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
+  }
+
+  /// Add a circle layer to the map with the given properties
+  ///
+  /// The returned [Future] completes after the change has been made on the
+  /// platform side.
+  ///
+  /// Note: [belowLayerId] is currently ignored on the web
+  Future<void> addRasterLayer(
+      String sourceId, String layerId, RasterLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addRasterLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
+  }
+
+  Future<void> addHillshadeLayer(
+      String sourceId, String layerId, HillshadeLayerProperties properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await MapLibreGlPlatform.getInstance(_id).addHillshadeLayer(
+      sourceId,
+      layerId,
+      properties.toJson(),
+      belowLayerId: belowLayerId,
+      sourceLayer: sourceLayer,
+    );
   }
 }

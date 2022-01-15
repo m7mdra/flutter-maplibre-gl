@@ -11,6 +11,9 @@ class MethodChannelMaplibreGl extends MapLibreGlPlatform {
           onInfoWindowTappedPlatform(symbolId);
         }
         break;
+      case 'map#onAttributionClick':
+        onAttributionClickPlatform(null);
+        break;
       case 'symbol#onTap':
         final String? symbolId = call.arguments['symbol'];
         if (symbolId != null) {
@@ -644,14 +647,17 @@ class MethodChannelMaplibreGl extends MapLibreGlPlatform {
   }
 
   @override
-  Future<void> removeImageSource(String imageSourceId) async {
+  Future<void> removeSource(String sourceId) async {
     try {
-      return await _channel.invokeMethod('style#removeImageSource',
-          <String, Object>{'imageSourceId': imageSourceId});
+      return await _channel.invokeMethod(
+        'style#removeSource',
+        <String, Object>{'sourceId': sourceId},
+      );
     } on PlatformException catch (e) {
       return new Future.error(e);
     }
   }
+
 
   @override
   Future<void> addLayer(String imageLayerId, String imageSourceId) async {
@@ -715,5 +721,119 @@ class MethodChannelMaplibreGl extends MapLibreGlPlatform {
     } on PlatformException catch (e) {
       return new Future.error(e);
     }
+  }
+
+  @override
+  Future<void> addGeoJsonSource(String sourceId, Map<String, dynamic> geojson,
+      {String? promoteId}) async {
+    await _channel.invokeMethod('source#addGeoJson', <String, dynamic>{
+      'sourceId': sourceId,
+      'geojson': jsonEncode(geojson),
+    });
+  }
+
+  @override
+  Future<void> setGeoJsonSource(
+      String sourceId, Map<String, dynamic> geojson) async {
+    await _channel.invokeMethod('source#setGeoJson', <String, dynamic>{
+      'sourceId': sourceId,
+      'geojson': jsonEncode(geojson),
+    });
+  }
+
+  @override
+  Future<void> addSymbolLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('symbolLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'sourceLayer': sourceLayer,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
+  }
+
+  @override
+  Future<void> addLineLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('lineLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'sourceLayer': sourceLayer,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
+  }
+
+  @override
+  Future<void> addCircleLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('circleLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'sourceLayer': sourceLayer,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
+  }
+
+  @override
+  Future<void> addFillLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('fillLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'sourceLayer': sourceLayer,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _channel.setMethodCallHandler(null);
+  }
+
+  @override
+  Future<void> addSource(String sourceId, SourceProperties properties) async {
+    await _channel.invokeMethod('style#addSource', <String, dynamic>{
+      'sourceId': sourceId,
+      'properties': properties.toJson(),
+    });
+  }
+
+  @override
+  Future<void> addRasterLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('rasterLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
+  }
+
+  @override
+  Future<void> addHillshadeLayer(
+      String sourceId, String layerId, Map<String, dynamic> properties,
+      {String? belowLayerId, String? sourceLayer}) async {
+    await _channel.invokeMethod('hillshadeLayer#add', <String, dynamic>{
+      'sourceId': sourceId,
+      'layerId': layerId,
+      'belowLayerId': belowLayerId,
+      'properties': properties
+          .map((key, value) => MapEntry<String, String>(key, jsonEncode(value)))
+    });
   }
 }

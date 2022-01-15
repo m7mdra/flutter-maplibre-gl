@@ -63,11 +63,10 @@ class PlaceSymbolBodyState extends State<PlaceSymbolBody> {
   }
 
   Future<void> removeImageSource(String imageSourceId) {
-    return controller.removeImageSource(imageSourceId);
+    return controller.removeSource(imageSourceId);
   }
 
-  Future<void> addLayer(String imageLayerId, String imageSourceId) {
-    return controller.addLayer(imageLayerId, imageSourceId);
+  Future<void> addLayer(String imageLayerId, String imageSourceId) async{
   }
 
   Future<void> addLayerBelow(

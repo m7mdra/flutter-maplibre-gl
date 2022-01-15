@@ -11,6 +11,14 @@ abstract class MapboxMapOptionsSink {
 
   void setMinMaxZoomPreference(num? min, num? max);
 
+  void setGestures({
+    required bool rotateGesturesEnabled,
+    required bool scrollGesturesEnabled,
+    required bool tiltGesturesEnabled,
+    required bool zoomGesturesEnabled,
+    required bool doubleClickZoomEnabled,
+  });
+
   void setRotateGesturesEnabled(bool rotateGesturesEnabled);
 
   void setScrollGesturesEnabled(bool scrollGesturesEnabled);
@@ -36,4 +44,5 @@ abstract class MapboxMapOptionsSink {
   void setAttributionButtonAlignment(AttributionButtonPosition position);
 
   void setAttributionButtonMargins(int x, int y);
+
 }
